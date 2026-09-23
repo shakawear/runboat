@@ -35,11 +35,10 @@ async def _github_request(method: str, url: str, json: Any = None) -> Any:
     async with httpx.AsyncClient() as client:
         full_url = f"https://api.github.com{url}"
         headers = {
-            "Accept": "application/vnd.github+json",
-            "X-GitHub-Api-Version": "2022-11-28",
+            "Accept": "application/vnd.github.v3+json",
         }
         if token := _github_token():
-            headers["Authorization"] = f"Bearer {token}"
+            headers["Authorization"] = f"token {token}"
         response = await client.request(method, full_url, headers=headers, json=json)
         if response.status_code == 404:
             raise NotFoundOnGitHub(f"GitHub URL not found: {full_url}.")

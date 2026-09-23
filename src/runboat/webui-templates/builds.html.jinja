@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
     <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>Runboat builds</title>
         <style>
             body {
@@ -41,6 +42,7 @@
 
             function onmessage(event) {
                 var oEvent = JSON.parse(event.data);
+                document.dispatchEvent(new Event("preview-build-change"));
                 var buildElement = document.getElementById(oEvent.build.name);
                 if (oEvent.event == "upd") {
                     if (buildElement) {

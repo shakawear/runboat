@@ -17,6 +17,10 @@ def validate_path(v: str | None) -> Path | None:
     return p
 
 
+def optional_path(v: str | None) -> Path | None:
+    return Path(v) if v else None
+
+
 class BuildSettings(BaseModel):
     image: str  # container image:tag
     # These extend the respective global settings.
@@ -76,7 +80,7 @@ class Settings(BaseSettings):
     # A file containing a GitHub token. The file is read for every request so
     # short-lived GitHub App installation tokens can be refreshed in place.
     # When set, this takes precedence over github_token.
-    github_token_file: Path | None = None
+    github_token_file: Annotated[Path | None, BeforeValidator(optional_path)] = None
     # The secret used to verify GitHub webhook signatures
     github_webhook_secret: bytes | None = None
     # The file with the python logging configuration to use for the runboat controller.

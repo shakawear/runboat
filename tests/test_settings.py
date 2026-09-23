@@ -6,6 +6,10 @@ from runboat.exceptions import RepoOrBranchNotSupported
 from runboat.settings import BuildSettings, settings
 
 
+def test_empty_github_token_file_is_disabled() -> None:
+    assert settings.github_token_file is None
+
+
 def test_get_build_settings() -> None:
     assert settings.get_build_settings("OCA/mis-builder", "15.0") == [
         BuildSettings(image="ghcr.io/oca/oca-ci/py3.8-odoo15.0:latest")
