@@ -46,8 +46,8 @@ async def test_github_request_rereads_token_file(
     await github._github_request("GET", "/second")
 
     assert [headers["Authorization"] for headers in client.headers] == [
-        "Bearer first-token",
-        "Bearer second-token",
+        "token first-token",
+        "token second-token",
     ]
 
 

@@ -18,6 +18,13 @@ class RunboatBuildElement extends LitElement {
     }
 
     static styles = css`
+        @media (pointer: coarse) {
+            button {
+                min-height: 44px;
+                min-width: 64px;
+                margin-inline-end: 4px;
+            }
+        }
         .build-card {
             width: 16.5em;
             padding: 0.5em;
@@ -73,7 +80,7 @@ class RunboatBuildElement extends LitElement {
                     html`⦙ 🗒 <a href="/api/v1/builds/${this.build.name}/log">log</a>`:""
                 }
                 ${this.build.status == "started"?
-                   html`⦙ 🚪 <a href="${this.build.deploy_link}" title="Odoo">live</a> <a href="${this.build.deploy_link_mailhog}" title="Mailhog">✉</a>`:""
+                   html`⦙ 🚪 <a href="${this.build.deploy_link}" title="Odoo">live</a>`:""
                 }
             </p>
             <p>
