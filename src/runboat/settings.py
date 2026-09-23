@@ -73,6 +73,10 @@ class Settings(BaseSettings):
     # The token to use for the GitHub api calls (to query branches and pull requests,
     # and report build statuses).
     github_token: str | None = None
+    # A file containing a GitHub token. The file is read for every request so
+    # short-lived GitHub App installation tokens can be refreshed in place.
+    # When set, this takes precedence over github_token.
+    github_token_file: Path | None = None
     # The secret used to verify GitHub webhook signatures
     github_webhook_secret: bytes | None = None
     # The file with the python logging configuration to use for the runboat controller.

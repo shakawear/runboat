@@ -1,5 +1,5 @@
 import logging
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 import httpx
@@ -11,14 +11,35 @@ from .settings import settings
 _logger = logging.getLogger(__name__)
 
 
+class GitHubTokenUnavailable(RuntimeError):
+    """The configured dynamic GitHub token cannot currently be read."""
+
+
+def _github_token() -> str | None:
+    if settings.github_token_file is None:
+        return settings.github_token
+    try:
+        token = settings.github_token_file.read_text().strip()
+    except OSError as error:
+        raise GitHubTokenUnavailable(
+            f"Could not read GitHub token file {settings.github_token_file}"
+        ) from error
+    if not token:
+        raise GitHubTokenUnavailable(
+            f"GitHub token file {settings.github_token_file} is empty"
+        )
+    return token
+
+
 async def _github_request(method: str, url: str, json: Any = None) -> Any:
     async with httpx.AsyncClient() as client:
         full_url = f"https://api.github.com{url}"
         headers = {
-            "Accept": "application/vnd.github.v3+json",
+            "Accept": "application/vnd.github+json",
+            "X-GitHub-Api-Version": "2022-11-28",
         }
-        if settings.github_token:
-            headers["Authorization"] = f"token {settings.github_token}"
+        if token := _github_token():
+            headers["Authorization"] = f"Bearer {token}"
         response = await client.request(method, full_url, headers=headers, json=json)
         if response.status_code == 404:
             raise NotFoundOnGitHub(f"GitHub URL not found: {full_url}.")
@@ -57,7 +78,7 @@ async def get_pull_info(repo: str, pr: int) -> CommitInfo:
     )
 
 
-class GitHubStatusState(str, Enum):
+class GitHubStatusState(StrEnum):
     error = "error"
     failure = "failure"
     pending = "pending"
@@ -85,3 +106,7 @@ async def notify_status(
             f"Failed to post GitHub commit status (code {e.response.status_code}):\n"
             f"{e.response.text}"
         )
+    except GitHubTokenUnavailable as error:
+        # Status reporting must not interrupt build lifecycle operations. Metadata
+        # lookups still fail when their configured private-repository token is absent.
+        _logger.error("Skipping GitHub commit status: %s", error)
