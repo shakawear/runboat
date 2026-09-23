@@ -35,6 +35,73 @@ def test_webhook_github_push(mocker: MockerFixture) -> None:
     )
 
 
+def test_webhook_github_push_preserves_slashes_in_branch(mocker: MockerFixture) -> None:
+    mocker.patch(
+        "runboat.settings.Settings.is_repo_and_branch_supported", return_value=True
+    )
+    add_task = mocker.patch("fastapi.BackgroundTasks.add_task")
+    response = client.post(
+        "/webhooks/github",
+        headers={"X-GitHub-Event": "push"},
+        json={
+            "repository": {"full_name": "oca/mis-builder"},
+            "ref": "refs/heads/feature/fix",
+            "after": "abcde",
+        },
+    )
+    response.raise_for_status()
+    add_task.assert_called_once_with(
+        controller.deploy_commit,
+        CommitInfo(
+            repo="oca/mis-builder",
+            target_branch="feature/fix",
+            pr=None,
+            git_commit="abcde",
+        ),
+    )
+
+
+def test_webhook_github_deleted_branch_undeploys_only_branch(
+    mocker: MockerFixture,
+) -> None:
+    mocker.patch(
+        "runboat.settings.Settings.is_repo_and_branch_supported", return_value=True
+    )
+    add_task = mocker.patch("fastapi.BackgroundTasks.add_task")
+    response = client.post(
+        "/webhooks/github",
+        headers={"X-GitHub-Event": "push"},
+        json={
+            "repository": {"full_name": "oca/mis-builder"},
+            "ref": "refs/heads/feature/fix",
+            "deleted": True,
+            "after": "0" * 40,
+        },
+    )
+    response.raise_for_status()
+    add_task.assert_called_once_with(
+        controller.undeploy_builds, repo="oca/mis-builder", branch="feature/fix"
+    )
+
+
+def test_webhook_github_tag_push_does_not_deploy(mocker: MockerFixture) -> None:
+    mocker.patch(
+        "runboat.settings.Settings.is_repo_and_branch_supported", return_value=True
+    )
+    add_task = mocker.patch("fastapi.BackgroundTasks.add_task")
+    response = client.post(
+        "/webhooks/github",
+        headers={"X-GitHub-Event": "push"},
+        json={
+            "repository": {"full_name": "oca/mis-builder"},
+            "ref": "refs/tags/v1.0",
+            "after": "abcde",
+        },
+    )
+    response.raise_for_status()
+    add_task.assert_not_called()
+
+
 def test_webhook_github_push_unsupported_repo(mocker: MockerFixture) -> None:
     mock = mocker.patch("fastapi.BackgroundTasks.add_task")
     response = client.post(
