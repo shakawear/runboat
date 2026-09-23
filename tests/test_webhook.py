@@ -85,6 +85,9 @@ def test_webhook_github_deleted_branch_undeploys_only_branch(
 
 
 def test_webhook_github_tag_push_does_not_deploy(mocker: MockerFixture) -> None:
+    mocker.patch(
+        "runboat.settings.Settings.is_repo_and_branch_supported", return_value=True
+    )
     add_task = mocker.patch("fastapi.BackgroundTasks.add_task")
     response = client.post(
         "/webhooks/github",
