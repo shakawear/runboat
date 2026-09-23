@@ -70,7 +70,10 @@ async def receive_payload(
             )
     elif x_github_event == "push":
         repo = payload["repository"]["full_name"]
-        target_branch = payload["ref"].split("/")[-1]
+        ref = payload["ref"]
+        if not ref.startswith("refs/heads/"):
+            return
+        target_branch = ref.removeprefix("refs/heads/")
         if not settings.is_repo_and_branch_supported(repo, target_branch):
             _logger.debug(
                 "Ignoring %s payload for unsupported repo %s or target branch %s",
@@ -79,12 +82,17 @@ async def receive_payload(
                 target_branch,
             )
             return
-        background_tasks.add_task(
-            controller.deploy_commit,
-            CommitInfo(
-                repo=repo,
-                target_branch=target_branch,
-                pr=None,
-                git_commit=payload["after"],
-            ),
-        )
+        if payload.get("deleted"):
+            background_tasks.add_task(
+                controller.undeploy_builds, repo=repo, branch=target_branch
+            )
+        else:
+            background_tasks.add_task(
+                controller.deploy_commit,
+                CommitInfo(
+                    repo=repo,
+                    target_branch=target_branch,
+                    pr=None,
+                    git_commit=payload["after"],
+                ),
+            )
